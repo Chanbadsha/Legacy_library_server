@@ -3,12 +3,22 @@ require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const cors = require("cors");
 const express = require("express");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const app = express();
 const port = process.env.PORT || 50000;
 
 // Middleware
+
+app.use(
+  cors({
+    origin: "http://localhost:5173", // Remove trailing slash
+    credentials: true,
+  })
+);
+
 app.use(express.json());
-app.use(cors());
+app.use(cookieParser());
 
 // Mongo DB Code
 
@@ -31,6 +41,31 @@ async function run() {
     // Connect to the "LegacyLibrary" database and access its "artifactsData" collection
     const LegacyLibrary = client.db("LegacyLibrary");
     const artifactsData = LegacyLibrary.collection("artifactsData");
+
+    // Auth related APIs
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+
+      const token = jwt.sign(user, process.env.JWT_TOKEN_SECRET, {
+        expiresIn: "5h",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
+    });
+
+    // Remove JWT Toke
+    app.post("/removeJwt", (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: false,
+        })
+        .send({ success: true });
+    });
 
     // add artifacts data to mongodb
     app.post("/addArtifacts", async (req, res) => {
