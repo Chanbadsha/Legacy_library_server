@@ -43,6 +43,8 @@ async function run() {
     const artifactsData = LegacyLibrary.collection("artifactsData");
 
     // Auth related APIs
+
+    // Create JWT Token
     app.post("/jwt", async (req, res) => {
       const user = req.body;
 
@@ -67,6 +69,17 @@ async function run() {
         .send({ success: true });
     });
 
+    // Verify Token Api
+    const verifyToken = (req, res, next) => {
+      const token = req.cookies.token;
+
+      if (!token) {
+        return res.send("Unauthorized user");
+      }
+      console.log("token", token);
+      next();
+    };
+
     // add artifacts data to mongodb
     app.post("/addArtifacts", async (req, res) => {
       const artifacts = req.body;
@@ -84,13 +97,13 @@ async function run() {
     // Handle Like and dislike
     app.put("/updateLike/:id", async (req, res) => {
       const { id } = req.params;
-      const { userId, likeCount } = req.body;
+      const { likeCount, userId } = req.body;
 
       try {
         // Validate userId and likeCount
         if (!userId || typeof likeCount !== "number") {
           return res.status(400).json({
-            message: "Invalid input: userId and likeCount are required",
+            message: "Invalid input: likeCount are required",
           });
         }
 
@@ -126,7 +139,6 @@ async function run() {
 
         return res.send("Operation Successful");
       } catch (error) {
-        console.error(error);
         return res.status(500).send("Operation Failed");
       }
     });
@@ -136,6 +148,15 @@ async function run() {
       const id = req.params.id;
       const find = { _id: new ObjectId(id) };
       const result = await artifactsData.findOne(find);
+      res.send(result);
+    });
+
+    // Get my Artifacts
+    app.get("/my-artifacts", verifyToken, async (req, res) => {
+      const email = req.query.email;
+      const query = { "artifactAdder.email": email };
+      const result = await artifactsData.find(query).toArray();
+      // console.log(req.cookies.token);
       res.send(result);
     });
 
