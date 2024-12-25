@@ -151,12 +151,20 @@ async function run() {
       res.send(result);
     });
 
-    // Get my Artifacts
+    // Get my added Artifacts
     app.get("/my-artifacts", async (req, res) => {
       const email = req.query.email;
       const query = { "artifactAdder.email": email };
       const result = await artifactsData.find(query).toArray();
 
+      res.send(result);
+    });
+
+    // Get My Liked Artifacts
+    app.get("/liked-artifacts", async (req, res) => {
+      const email = req.query.email;
+      const query = { likedBy: email };
+      const result = await artifactsData.find(query).toArray();
       res.send(result);
     });
 
@@ -195,7 +203,7 @@ async function run() {
     // Delete My artifacts
     app.delete("/delete-artifact/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id);
+
       const filter = { _id: new ObjectId(id) };
       const result = await artifactsData.deleteOne(filter);
       res.send(result);
