@@ -6,7 +6,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 const app = express();
-const port = process.env.PORT || 50000;
+const port = process.env.PORT || 5000;
 
 // Middleware
 
@@ -76,7 +76,7 @@ async function run() {
       if (!token) {
         return res.send("Unauthorized user");
       }
-      console.log("token", token);
+
       next();
     };
 
@@ -152,11 +152,52 @@ async function run() {
     });
 
     // Get my Artifacts
-    app.get("/my-artifacts", verifyToken, async (req, res) => {
+    app.get("/my-artifacts", async (req, res) => {
       const email = req.query.email;
       const query = { "artifactAdder.email": email };
       const result = await artifactsData.find(query).toArray();
-      // console.log(req.cookies.token);
+
+      res.send(result);
+    });
+
+    // Update My Artifacts
+    app.put("/update-artifact/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const {
+        artifactName,
+        artifactType,
+        artifactImage,
+        createdAt,
+        discoveredAt,
+        discoveredBy,
+        presentLocation,
+        historicalContext,
+      } = req.body;
+
+      const updateDoc = {
+        $set: {
+          artifactName: artifactName,
+          artifactType: artifactType,
+          artifactImage: artifactImage,
+          createdAt: createdAt,
+          discoveredAt: discoveredAt,
+          discoveredBy: discoveredBy,
+          presentLocation: presentLocation,
+          historicalContext: historicalContext,
+        },
+      };
+
+      const result = await artifactsData.updateOne(filter, updateDoc);
+      res.send(result);
+    });
+
+    // Delete My artifacts
+    app.delete("/delete-artifact/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const filter = { _id: new ObjectId(id) };
+      const result = await artifactsData.deleteOne(filter);
       res.send(result);
     });
 
