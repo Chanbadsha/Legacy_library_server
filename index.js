@@ -12,7 +12,11 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: "http://localhost:5173", // Remove trailing slash
+    origin: [
+      "http://localhost:5173",
+      "https://legacylibrary-906c1.web.app",
+      "https://legacylibrary-906c1.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -36,7 +40,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     // Connect to the "LegacyLibrary" database and access its "artifactsData" collection
     const LegacyLibrary = client.db("LegacyLibrary");
@@ -49,12 +53,14 @@ async function run() {
       const user = req.body;
 
       const token = jwt.sign(user, process.env.JWT_TOKEN_SECRET, {
-        expiresIn: "5h",
+        expiresIn: "10h",
       });
       res
         .cookie("token", token, {
           httpOnly: true,
-          secure: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+          // secure: false,
         })
         .send({ success: true });
     });
@@ -64,14 +70,16 @@ async function run() {
       res
         .clearCookie("token", {
           httpOnly: true,
-          secure: false,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+          // secure: false,
         })
         .send({ success: true });
     });
 
     // Verify Token Api
     const verifyToken = (req, res, next) => {
-      const token = req.cookies.token;
+      const token = req.cookies?.token;
 
       if (!token) {
         return res.send("Unauthorized user");
@@ -152,8 +160,9 @@ async function run() {
     });
 
     // Get my added Artifacts
-    app.get("/my-artifacts", async (req, res) => {
+    app.get("/my-artifacts", verifyToken, async (req, res) => {
       const email = req.query.email;
+      console.log(req.cookies.token);
       const query = { "artifactAdder.email": email };
       const result = await artifactsData.find(query).toArray();
 
@@ -161,15 +170,16 @@ async function run() {
     });
 
     // Get My Liked Artifacts
-    app.get("/liked-artifacts", async (req, res) => {
+    app.get("/liked-artifacts", verifyToken, async (req, res) => {
       const email = req.query.email;
+
       const query = { likedBy: email };
       const result = await artifactsData.find(query).toArray();
       res.send(result);
     });
 
     // Update My Artifacts
-    app.put("/update-artifact/:id", async (req, res) => {
+    app.put("/update-artifact/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const {
@@ -210,10 +220,10 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // await client.db("admin").command({ ping: 1 });
+    // console.log(
+    //   "Pinged your deployment. You successfully connected to MongoDB!"
+    // );
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
