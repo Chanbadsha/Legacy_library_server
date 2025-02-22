@@ -29,7 +29,7 @@ Ensure you have the following installed on your system:
 ### Steps
 ```sh
 # Clone the repository
-git clone https://github.com/yourusername/legacy-library-server.git
+git clone https://github.com/Chanbadsha/Legacy_library_server.git
 
 # Navigate to the project directory
 cd legacy-library-server
